@@ -14,14 +14,25 @@ public class Parser {
     }
 
     public static func parse(string: String) -> [Game] {
-        let games = splitGame(string)
-        for game in games {
-
+        var games: [Game] = []
+        for game in splitGame(string) {
+            games.append(parseSingleGame(game))
         }
-        return []
+        return games
     }
 
     // MARK: - Helper
+
+    static func parseSingleGame(_ game: String) -> Game {
+        var tags: [Game.Tag] = []
+        for line in game.lines {
+            if line.hasPrefix("[") {
+                guard let tag = Game.Tag(rawValue: line) else { continue }
+                tags.append(tag)
+            }
+        }
+        return Game(tags: tags)
+    }
 
     static func splitGame(_ multipleGamePGN: String) -> [String] {
         var games: [String] = []

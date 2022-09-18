@@ -20,18 +20,56 @@ public struct Game {
         case timeout(_ outOfTime: Color)
     }
     public enum Tag {
-        case event(_ value: String)
-        case site(_ value: String)
-        case start(_ date: Date)
-        case round(_ round: Int)
-        case username(_ username: String, color: Color)
-        case end(_ date: Date)
-        case elo(_ elo: Int, color: Color)
-        case result(_ result: Result)
-        case tag(_ tag: String, _ value: String)
-        case timeControl(_ timecontrol: String)
-        case link(_ link: URL)
+        case tag(name: String, value: String)
+
+        var name: String {
+            switch self {
+            case .tag(let name, _):
+                return name
+            }
+        }
+
+        var value: String {
+            switch self {
+            case .tag(_, let value):
+                return value
+            }
+        }
     }
 
     public var tags: [Tag] = []
+}
+
+extension Game.Tag: RawRepresentable {
+    public typealias RawValue = String
+
+    static let namePattern = try! NSRegularExpression(pattern: "\\[([a-zA-Z0-9]+)", options: .caseInsensitive)
+    static let valuePattern = try! NSRegularExpression(pattern: "\"([^\"]+)\"\\]", options: .caseInsensitive)
+
+    public init?(rawValue: String) {
+        let rawValue = rawValue.trimmingCharacters(in: .whitespaces)
+        guard rawValue.hasPrefix("["), rawValue.hasSuffix("]") else { return nil }
+
+        /* create the regular expression with options */
+        guard
+            let nameResult = Self.namePattern.firstMatch(in: rawValue, range: NSRange(location: 0, length: rawValue.utf8.count)),
+            let valueResult = Self.valuePattern.firstMatch(in: rawValue, range: NSRange(location: 0, length: rawValue.utf8.count))
+        else {
+            return nil
+        }
+
+        let nameStart = rawValue.index(rawValue.startIndex, offsetBy: nameResult.range(at: 1).lowerBound)
+        let nameEnd = rawValue.index(rawValue.startIndex, offsetBy: nameResult.range(at: 1).upperBound)
+        let name = String(rawValue[nameStart..<nameEnd])
+
+        let valueStart = rawValue.index(rawValue.startIndex, offsetBy: valueResult.range(at: 1).lowerBound)
+        let valueEnd = rawValue.index(rawValue.startIndex, offsetBy: valueResult.range(at: 1).upperBound)
+        let value = String(rawValue[valueStart..<valueEnd])
+
+        self = .tag(name: name, value: value)
+    }
+
+    public var rawValue: String {
+        return "[\(name) \"\(value)\"]"
+    }
 }
